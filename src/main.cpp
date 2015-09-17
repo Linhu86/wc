@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string>
 #include <unistd.h>
+#include <pthread.h>
 #include "thread.hpp"
 #include "wqueue.hpp"
 
@@ -79,7 +80,8 @@ class ConsumerThread : public Thread
              pthread_mutex_unlock(&m_mutex);
 
          }
-         
+
+         printf("Consumer thread %lu: resource available %d\n", (long unsigned int)self(), m_queue.size());
          sleep(2);
        }
     }
@@ -125,7 +127,9 @@ class ProducerThread : public Thread
           pthread_cond_signal(&m_cond);
           pthread_mutex_unlock(&m_mutex);      
         }
-        sleep(0.5);
+
+        printf("Producer thread %lu: resource available %d\n", (long unsigned int)self(), m_queue.size());
+        sleep(1);
        
      }
    }
@@ -137,11 +141,18 @@ class ProducerThread : public Thread
 int main()
 {
     // Create the queue and consumer (worker) threads
-    wqueue<WorkItem*>  queue(32);
+    wqueue<WorkItem*>  queue(1024);
 
     ConsumerThread* consumer_thread1 = new ConsumerThread(queue);
     ConsumerThread* consumer_thread2 = new ConsumerThread(queue);
+/*
+    consumer_thread1->set_sched(SCHED_RR);
+    consumer_thread1->set_priority(10);
+    consumer_thread2->set_sched(SCHED_RR);
+    consumer_thread2->set_priority(10);
+*/
 
+    printf("Create 2 Consumer threads.\n");
     consumer_thread1->create();
     consumer_thread2->create();
 
@@ -150,9 +161,34 @@ int main()
     ProducerThread* producer_thread1 = new ProducerThread(queue);
     ProducerThread* producer_thread2 = new ProducerThread(queue);
 
+  /*  
+    producer_thread1->set_sched(SCHED_RR);
+    producer_thread1->set_priority(10);
+    producer_thread2->set_sched(SCHED_RR);
+    producer_thread2->set_priority(10);
+*/
+    printf("Create 2 Producer threads.\n");
+
     producer_thread1->create();
     producer_thread2->create();
- 
+
+    sleep(10);
+
+    ConsumerThread* consumer_thread3 = new ConsumerThread(queue);
+    ConsumerThread* consumer_thread4 = new ConsumerThread(queue);
+/*
+    consumer_thread3->set_sched(SCHED_RR);
+    consumer_thread3->set_priority(10);
+    consumer_thread4->set_sched(SCHED_RR);
+    consumer_thread4->set_priority(10);
+*/
+    printf("!!!!!!!!!!!!!!!!!! Create 2 more Consumer threads !!!!!!!!!!!!!\n");
+        
+    consumer_thread3->create();
+    consumer_thread4->create();
+
+
+
     // Wait for the queue to be empty
     while (1)
     {
