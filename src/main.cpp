@@ -145,12 +145,11 @@ int main()
 
     ConsumerThread* consumer_thread1 = new ConsumerThread(queue);
     ConsumerThread* consumer_thread2 = new ConsumerThread(queue);
-/*
-    consumer_thread1->set_sched(SCHED_RR);
-    consumer_thread1->set_priority(10);
-    consumer_thread2->set_sched(SCHED_RR);
-    consumer_thread2->set_priority(10);
-*/
+
+    consumer_thread1->set_sched(SCHED_RR, 10);
+    consumer_thread2->set_sched(SCHED_RR, 10);
+
+
 
     printf("Create 2 Consumer threads.\n");
     consumer_thread1->create();
@@ -161,12 +160,9 @@ int main()
     ProducerThread* producer_thread1 = new ProducerThread(queue);
     ProducerThread* producer_thread2 = new ProducerThread(queue);
 
-  /*  
-    producer_thread1->set_sched(SCHED_RR);
-    producer_thread1->set_priority(10);
-    producer_thread2->set_sched(SCHED_RR);
-    producer_thread2->set_priority(10);
-*/
+    producer_thread1->set_sched(SCHED_RR, 10);
+    producer_thread2->set_sched(SCHED_RR, 10);
+
     printf("Create 2 Producer threads.\n");
 
     producer_thread1->create();
@@ -176,12 +172,10 @@ int main()
 
     ConsumerThread* consumer_thread3 = new ConsumerThread(queue);
     ConsumerThread* consumer_thread4 = new ConsumerThread(queue);
-/*
-    consumer_thread3->set_sched(SCHED_RR);
-    consumer_thread3->set_priority(10);
-    consumer_thread4->set_sched(SCHED_RR);
-    consumer_thread4->set_priority(10);
-*/
+
+    consumer_thread3->set_sched(SCHED_RR, 10);
+    consumer_thread4->set_sched(SCHED_RR, 10);
+
     printf("!!!!!!!!!!!!!!!!!! Create 2 more Consumer threads !!!!!!!!!!!!!\n");
         
     consumer_thread3->create();

@@ -12,10 +12,18 @@ static void * runThread(void *arg)
 
 Thread :: Thread() : m_tid(0), m_running(0), m_detached(0) 
 {
+    int ret;
+    ret = pthread_attr_init(&m_attr);
+    if (ret != 0)
+    {
+      printf("pthread [%lu] pthread_attr_init error: %s\n", (long unsigned int)m_tid, strerror(errno));
+    }
+
 }
 
 Thread :: ~Thread()
 {
+
   if(m_running == 1 && m_detached == 0)
   {
     pthread_detach(m_tid);
@@ -25,6 +33,7 @@ Thread :: ~Thread()
     pthread_cancel(m_tid);
   }
 
+  pthread_attr_destroy(&m_attr);
 }
 
 int Thread :: create()
@@ -44,7 +53,7 @@ int Thread :: join()
 
   if(m_running == 1)
   {
-    result = pthread_join(&m_tid, NULL);
+    result = pthread_join(m_tid, NULL);
     if(result == 0)
     {
       m_detached = 0;
@@ -73,75 +82,44 @@ pthread_t Thread :: self()
   return m_tid;
 }
 
-int Thread :: set_sched(int sched_pol)
+int Thread :: set_sched(int sched_pol, int sched_prio)
 {
   m_policy = sched_pol;
-  struct sched_param param;
-  pthread_attr_t attr;
+  m_prio = sched_prio;
+
   int ret = 0;
 
-  ret = pthread_attr_init(&attr);
-  if (ret != 0)
-  {
-    printf("pthread [%lu] pthread_attr_init error: %s\n", (long unsigned int)m_tid, strerror(errno));
-  }
-  
-  ret = pthread_setschedparam(pthread_self(), m_policy, &param);
+  pthread_attr_setschedpolicy(&m_attr, m_policy);
   if (ret != 0){
-    printf("pthread [%lu] pthread_setschedparam error: %s\n", (long unsigned int)m_tid, strerror(errno));  
+    printf("pthread_attr_setschedpolicy error: %s\n", strerror(errno));
     return 1;
   }
 
-  ret = pthread_attr_setschedpolicy(&attr, m_policy);
-  if (ret != 0)
-  {
-    printf("pthread [%lu] pthread_attr_setschedpolicy error: %s\n", (long unsigned int)m_tid, strerror(errno));
+  m_param.sched_priority = m_prio;
+
+  ret = pthread_attr_setschedparam(&m_attr, &m_param);
+  if (ret != 0){
+    printf("pthread_attr_setschedparam error: %s\n", strerror(errno));
     return 1;
   }
-
-  ret = pthread_attr_setschedparam(&attr, &param);
-  if (ret != 0){
-      printf("pthread [%lu] pthread_attr_setschedparam error: %s\n", (long unsigned int)m_tid, strerror(errno));
-      return 1;
-  }
   
-  pthread_attr_destroy(&attr);
+  display_sched_attr();
 
   return 0;
-}
-
-int Thread :: set_priority(int sched_prio)
-{
-  m_prio = sched_prio;
-  int ret = 0;
-
-  ret = pthread_setschedprio(m_tid, m_prio);
-  if (ret != 0){
-    printf("pthread [%lu] pthread_setschedprio error: %s\n", (long unsigned int)m_tid, strerror(errno));
-    return 1;
-  }
 }
 
 void Thread :: display_sched_attr()
 {
   int ret;
   int policy;
-  struct sched_param param;
-  pthread_attr_t attr;
 
-  ret = pthread_attr_init(&attr);
-  if (ret != 0)
-  {
-    printf("pthread [%lu] pthread_attr_init error: %s\n", (long unsigned int)m_tid, strerror(errno));
-  }
-
-  ret = pthread_attr_getschedparam(&attr, &param);
+  ret = pthread_attr_getschedparam(&m_attr, &m_param);
   if (ret != 0)
   {
     printf("pthread [%lu] pthread_attr_getschedparam error: %s\n", (long unsigned int)m_tid, strerror(errno));
   }
-  
-  ret = pthread_attr_getschedpolicy(&attr, &policy);
+
+  ret = pthread_attr_getschedpolicy(&m_attr, &policy);
   if (ret != 0)
   {
     printf("pthread [%lu] pthread_attr_getschedpolicy error: %s\n", (long unsigned int)m_tid, strerror(errno));
@@ -152,9 +130,8 @@ void Thread :: display_sched_attr()
         (policy == SCHED_RR)    ? "SCHED_RR" :
         (policy == SCHED_OTHER) ? "SCHED_OTHER" :
         "???",
-        param.sched_priority);
+        m_param.sched_priority);
 
-  pthread_attr_destroy(&attr);
 } 
 
 
