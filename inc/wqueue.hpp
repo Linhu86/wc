@@ -6,7 +6,8 @@
 
 using namespace std;
 
-template <typename T> class wqueue
+template <typename T>
+class wqueue
 {
 
   public:

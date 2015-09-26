@@ -37,10 +37,11 @@ class WorkItem
     int getNumber() { return m_number; }
 };
 
+template<class T>
 class ConsumerThread : public Thread
 {
   public:
-    ConsumerThread(wqueue<WorkItem*>& queue) : m_queue(queue) {}
+    ConsumerThread(wqueue<T>& queue) : m_queue(queue) {}
  
     void* run() {
        while(consumer_state != THREAD_CONSUMER_STOP){
@@ -65,7 +66,7 @@ class ConsumerThread : public Thread
 
          printf("Consumer thread %lu: - waiting for item...\n", 
                (long unsigned int)self());
-         WorkItem* item = m_queue.remove();
+         T item = m_queue.remove();
          printf("Consumer thread %lu: - got one item\n", 
                (long unsigned int)self());
          printf("Consumer thread %lu: - item: message - %s, number - %d\n", 
@@ -83,18 +84,21 @@ class ConsumerThread : public Thread
 
          printf("Consumer thread %lu: resource available %d\n", (long unsigned int)self(), m_queue.size());
          sleep(2);
+
+         return NULL;
        }
     }
 
   private:
-    wqueue<WorkItem*>& m_queue;
+    wqueue<T>& m_queue;
 
 };
 
+template<class T>
 class ProducerThread : public Thread
 {
   public:
-    ProducerThread(wqueue<WorkItem *> &queue) : m_queue(queue){}
+    ProducerThread(wqueue<T> &queue) : m_queue(queue){}
 
     void* run() {
 
@@ -118,7 +122,7 @@ class ProducerThread : public Thread
           printf("Producer thread %lu: queue is empty, produce one and send signal for someone to consumer it.\n", (long unsigned int)self());
         }
 
-        WorkItem *item = new WorkItem("product:", (long unsigned int)self());
+        T item = new WorkItem("product:", (long unsigned int)self());
         m_queue.add(item);
 
         if(send_signal == 1)
@@ -130,12 +134,12 @@ class ProducerThread : public Thread
 
         printf("Producer thread %lu: resource available %d\n", (long unsigned int)self(), m_queue.size());
         sleep(1);
-       
      }
+     return NULL;
    }
 
   private:
-    wqueue<WorkItem *>& m_queue;
+    wqueue<T>& m_queue;
 };
 
 int main()
@@ -143,8 +147,8 @@ int main()
     // Create the queue and consumer (worker) threads
     wqueue<WorkItem*>  queue(1024);
 
-    ConsumerThread* consumer_thread1 = new ConsumerThread(queue);
-    ConsumerThread* consumer_thread2 = new ConsumerThread(queue);
+    ConsumerThread<WorkItem*> * consumer_thread1 = new ConsumerThread<WorkItem*>(queue);
+    ConsumerThread<WorkItem*> * consumer_thread2 = new ConsumerThread<WorkItem*>(queue);
 
     consumer_thread1->set_sched(SCHED_RR, 10);
     consumer_thread2->set_sched(SCHED_RR, 10);
@@ -157,8 +161,8 @@ int main()
 
     sleep(2);
 
-    ProducerThread* producer_thread1 = new ProducerThread(queue);
-    ProducerThread* producer_thread2 = new ProducerThread(queue);
+    ProducerThread <WorkItem*> * producer_thread1 = new ProducerThread <WorkItem*> (queue);
+    ProducerThread <WorkItem*> * producer_thread2 = new ProducerThread <WorkItem*> (queue);
 
     producer_thread1->set_sched(SCHED_RR, 10);
     producer_thread2->set_sched(SCHED_RR, 10);
@@ -170,8 +174,8 @@ int main()
 
     sleep(10);
 
-    ConsumerThread* consumer_thread3 = new ConsumerThread(queue);
-    ConsumerThread* consumer_thread4 = new ConsumerThread(queue);
+    ConsumerThread <WorkItem*> * consumer_thread3 = new ConsumerThread <WorkItem*> (queue);
+    ConsumerThread <WorkItem*> * consumer_thread4 = new ConsumerThread <WorkItem*> (queue);
 
     consumer_thread3->set_sched(SCHED_RR, 10);
     consumer_thread4->set_sched(SCHED_RR, 10);
@@ -180,8 +184,6 @@ int main()
         
     consumer_thread3->create();
     consumer_thread4->create();
-
-
 
     // Wait for the queue to be empty
     while (1)
